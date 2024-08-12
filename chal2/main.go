@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type ParanParanStack struct {
+type ParanStack struct {
 	elements []rune
 }
 
@@ -40,18 +40,6 @@ func checkError(e error) {
 	}
 }
 
-// To check error while reading file
-func checkFile(err error) bool {
-	if err != nil {
-		if err.Error() == "EOF" {
-			return true // End of file reached
-		}
-		fmt.Println("Error reading file:")
-		checkError(err)
-	}
-	return false
-}
-
 // fucntion to open file
 func readFile(file_name string) *os.File {
 	file, err := os.Open(file_name)
@@ -71,24 +59,42 @@ func main() {
 				os.Exit(1)
 			}
 		}
-		step1()
+		res1 := step1()
+		if !res1 {
+			os.Exit(0)
+		}
 	}
 }
 
 // Step 1 divide
-func step1() {
+func step1() bool {
 	file := readFile("./tests/step1/valid.json")
 	defer file.Close()
 	reader := bufio.NewReader(file)
-	valid_braces := ParanParanStack{}
+	valid_braces := ParanStack{}
 
 	for {
 		line, err := reader.ReadString('\n')
-		checkFile(err)
+		if err != nil {
+			if err.Error() == "EOF" {
+				break // End of file reached
+			}
+			fmt.Println("Error reading file:")
+			checkError(err)
+		}
 		for _, ch := range line {
 			if ch == '{' {
-				st.
+				valid_braces.Push(ch)
+			} else if ch == '}' {
+				valid_braces.Pop()
 			}
 		}
+	}
+	if (len(valid_braces.elements)) == 0 {
+		fmt.Println("Valid JSON")
+		return true
+	} else {
+		fmt.Println("Invalid JSON")
+		return false
 	}
 }
