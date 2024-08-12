@@ -59,7 +59,8 @@ func main() {
 				os.Exit(1)
 			}
 		}
-		res1 := step1()
+		file_name := "./tests/step1/invalid.json"
+		res1 := step1(file_name)
 		if !res1 {
 			os.Exit(0)
 		}
@@ -67,12 +68,13 @@ func main() {
 }
 
 // Step 1 divide
-func step1() bool {
-	file := readFile("./tests/step1/valid.json")
+func step1(file_name string) bool {
+	file := readFile(file_name)
 	defer file.Close()
 	reader := bufio.NewReader(file)
 	valid_braces := ParanStack{}
 
+	contains_braces := false
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
@@ -82,15 +84,17 @@ func step1() bool {
 			fmt.Println("Error reading file:")
 			checkError(err)
 		}
+
 		for _, ch := range line {
 			if ch == '{' {
+				contains_braces = true
 				valid_braces.Push(ch)
 			} else if ch == '}' {
 				valid_braces.Pop()
 			}
 		}
 	}
-	if (len(valid_braces.elements)) == 0 {
+	if len(valid_braces.elements) == 0 && contains_braces {
 		fmt.Println("Valid JSON")
 		return true
 	} else {
