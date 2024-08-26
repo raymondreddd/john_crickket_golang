@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"fmt"
+	"io"
 	"log"
 	"os"
 )
@@ -79,26 +80,40 @@ func main() {
 	// Step 4a - get all text from file
 	text := getTextFromFile(file)
 
-	// step 4b - main encode
+	// step 4b - encode complete text and tree along with header
 	encoded_text := encodeText(text, prefix_code_table)
+	encoded_filename := "encoded.huff"
 
-	writeEncodedFile("encoded.huff", tree, encoded_text)
+	writeEncodedFile(encoded_filename, tree, encoded_text)
 
 	//step 5: decode the "encoded.huff" file
 
-	encodedFile, err := os.ReadFile("output.huff")
+	encoded_file, err := os.Open(encoded_filename)
+	check(err)
+	defer encoded_file.Close()
+
+	encoded_content, err := io.ReadAll(encoded_file)
+	check(err)
+
+	// Read the size of the Huffman Tree (4 bytes integer)
+	var tree_size int32
+	buf := bytes.NewReader(encoded_content)
+	if err := binary.Read(buf, binary.BigEndian, &tree_size); err != nil {
+		log.Fatal(err)
+	}
+
+	// Extract the Huffman Tree data and decode it
+	tree_data := encoded_content[4 : 4+tree_size]
+	decoded_tree, err := decodeHuffmanTree(tree_data)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tree, err := decodeHuffmanTree(encodedFile[:treeSize])
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Extract the encoded text
+	encoded_text = string(encoded_content[4+tree_size:])
+	decoded_text := decodeText(encoded_text, decoded_tree)
 
-	encodedText := string(encodedFile[treeSize:])
-	decodedText := decodeText(encodedText, tree)
-	fmt.Println("Decoded Text:", decodedText)
+	writeTextToFile("decoded.txt", decoded_text)
 }
 
 func getTextFromFile(file *os.File) string {
@@ -115,6 +130,12 @@ func getTextFromFile(file *os.File) string {
 	}
 
 	return text
+}
+
+func writeTextToFile(filename string, text string) {
+	if err := os.WriteFile(filename, []byte(text), 0644); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // using dfs to print the tree
@@ -283,4 +304,32 @@ func writeEncodedFile(filename string, tree *HuffmanNode, encoded_text string) e
 		0644 is permissions -  (readable and writable by the owner, readable by others).
 	*/
 	return os.WriteFile(filename, out_buf.Bytes(), 0644)
+}
+
+func decodeHuffmanTree(encodedTree []byte) (*HuffmanNode, error) {
+	buf := bytes.NewBuffer(encodedTree)
+	decoder := gob.NewDecoder(buf)
+	var tree HuffmanNode
+	if err := decoder.Decode(&tree); err != nil {
+		return nil, err
+	}
+	return &tree, nil
+}
+
+func decodeText(encodedText string, tree *HuffmanNode) string {
+	var decodedText string
+	node := tree
+	for _, bit := range encodedText {
+		if bit == '0' {
+			node = node.left
+		} else {
+			node = node.right
+		}
+
+		if node.left == nil && node.right == nil {
+			decodedText += string(node.Char)
+			node = tree
+		}
+	}
+	return decodedText
 }
