@@ -78,7 +78,7 @@ func main() {
 	// Step 4a - get all text from file
 	text := getTextFromFile(file)
 
-	// step 4b - main enocde
+	// step 4b - main encode
 	encoded_text := encodeText(text, prefix_code_table)
 
 	if err := writeEncodedFile("encoded.huff", tree, encoded_text); err != nil {
@@ -218,13 +218,22 @@ func encodeText(text string, prefix_code_table map[rune]string) string {
 }
 
 func writeEncodedFile(filename string, tree *HuffmanNode, encoded_text string) error {
+	// To temporarily hold the binary data of the Huffman tree before it is written to a file.
+	// laymans term: packing all the tiny blocks (bytes) created by your gob machine.
 	var buf bytes.Buffer
+
+	// creating machine(complex data to simple bits) to encode a large text into stream of bytes
 	encoder := gob.NewEncoder(&buf)
+
+	// using the machine
 	if err := encoder.Encode(tree); err != nil {
 		return err
 	}
 
+	// Layman's term: I’m taking everything from the box (buf.Bytes()) and putting it into another box called encoded_data
 	encoded_data := buf.Bytes()
+
+	// append bytes converted `encoded_text` (original text mapped to binary using prefix_code_table) to `encoded_data` (or the huffman tree we created)
 	encoded_data = append(encoded_data, []byte(encoded_text)...)
 
 	// Open the file for writing
