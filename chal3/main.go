@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"container/heap"
+	"encoding/binary"
 	"encoding/gob"
 	"fmt"
 	"log"
@@ -81,10 +82,23 @@ func main() {
 	// step 4b - main encode
 	encoded_text := encodeText(text, prefix_code_table)
 
-	if err := writeEncodedFile("encoded.huff", tree, encoded_text); err != nil {
+	writeEncodedFile("encoded.huff", tree, encoded_text)
+
+	//step 5: decode the "encoded.huff" file
+
+	encodedFile, err := os.ReadFile("output.huff")
+	if err != nil {
 		log.Fatal(err)
 	}
 
+	tree, err := decodeHuffmanTree(encodedFile[:treeSize])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	encodedText := string(encodedFile[treeSize:])
+	decodedText := decodeText(encodedText, tree)
+	fmt.Println("Decoded Text:", decodedText)
 }
 
 func getTextFromFile(file *os.File) string {
@@ -190,7 +204,7 @@ func buildHuffmanTree(frequencies map[rune]int) *HuffmanNode {
 }
 
 /*
-Function to genretate prefix table, where rune - binary output of that rune (or character, pick your vice)
+Function to generate prefix table, where rune - binary output of that rune (or character, pick your vice)
 */
 func generatePrefixTableMap(node *HuffmanNode, prefix string, code_table map[rune]string) {
 	if node == nil {
@@ -217,6 +231,7 @@ func encodeText(text string, prefix_code_table map[rune]string) string {
 	return encoded_text
 }
 
+// Function to write and encode tree data structure along with encoded text recieved to a file
 func writeEncodedFile(filename string, tree *HuffmanNode, encoded_text string) error {
 	// To temporarily hold the binary data of the Huffman tree before it is written to a file.
 	// laymans term: packing all the tiny blocks (bytes) created by your gob machine.
@@ -230,13 +245,36 @@ func writeEncodedFile(filename string, tree *HuffmanNode, encoded_text string) e
 		return err
 	}
 
-	// Layman's term: I’m taking everything from the box (buf.Bytes()) and putting it into another box called encoded_data
-	encoded_data := buf.Bytes()
+	// Layman's term: I’m taking everything from the box (buf.Bytes()) and putting it into another box called encoded_tree
+	encoded_tree := buf.Bytes()
 
-	// append bytes converted `encoded_text` (original text mapped to binary using prefix_code_table) to `encoded_data` (or the huffman tree we created)
-	encoded_data = append(encoded_data, []byte(encoded_text)...)
+	tree_size := int32(len(encoded_tree))
 
-	// Open the file for writing
+	// append bytes converted `encoded_text` (original text mapped to binary using prefix_code_table) to `encoded_tree` (or the huffman tree we created)
+	encoded_tree = append(encoded_tree, []byte(encoded_text)...)
+
+	// Create a buffer for the header and encoded data, or empty container for blocks
+	var out_buf bytes.Buffer
+
+	/*
+		Write the size of the Huffman Tree as a 4-byte integer
+
+		&out_buf: You’re telling the tool where to write the data, which is into our container (out_buf).
+
+		binary.BigEndian: This specifies how to format the data. It’s like deciding how you want to write numbers so that everyone reads them the same way.
+
+		tree_size: This is the size of our Huffman Tree (think of it as how big your tree is). You’re writing this size as a 4-byte number into your container.
+	*/
+	if err := binary.Write(&out_buf, binary.BigEndian, tree_size); err != nil {
+		return err
+	}
+
+	// Write the a packed-up version of Huffman Tree
+	out_buf.Write(encoded_tree)
+
+	// Write the encoded text
+	out_buf.WriteString(string(encoded_text))
+
 	/*
 		file is opened with the os.O_WRONLY (write-only) flag,
 		the os.O_CREATE flag (which creates the file if it doesn’t exist),
@@ -244,11 +282,5 @@ func writeEncodedFile(filename string, tree *HuffmanNode, encoded_text string) e
 
 		0644 is permissions -  (readable and writable by the owner, readable by others).
 	*/
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	check(err)
-	defer file.Close()
-
-	// Write the encoded data to the file
-	_, err = file.Write(encoded_data)
-	return err
+	return os.WriteFile(filename, out_buf.Bytes(), 0644)
 }
