@@ -55,11 +55,22 @@ func (pq *PriorityQueue) Pop() interface{} {
 func main() {
 	file := readFile("test.txt")
 
+	// Step 1 - frequency map for each rune or char
 	freq_map, err := genFrequencyMap(file)
 	check(err)
 
+	// Step 2 - huffman tree (or minimum priority queue based on freq) out of the map
 	tree := buildHuffmanTree(freq_map)
 	printTree(tree, 0)
+
+	// Step 3 -  Prefix code table for each rune the respective prefixed binary code
+	code_table := make(map[rune]string)
+	generateCodes(tree, "", code_table)
+
+	fmt.Println("Generated Huffman Codes:")
+	for char, code := range code_table {
+		fmt.Printf("%q: %s\n", char, code)
+	}
 
 }
 
@@ -150,8 +161,29 @@ func buildHuffmanTree(frequencies map[rune]int) *HuffmanNode {
 			left:      left,
 			right:     right,
 		}
+
+		// we merge smaller frequencies one because they will keep getting
+		// pushed down as tree develops
 		heap.Push(&pq, merged)
 	}
 
 	return heap.Pop(&pq).(*HuffmanNode)
+}
+
+/*
+Function to genretate prefix table, where rune - binary output of that rune (or character, pick your vice)
+*/
+func generateCodes(node *HuffmanNode, prefix string, code_table map[rune]string) {
+	if node == nil {
+		return
+	}
+
+	// If its leaf node, then its a rune, assign the rune to the prefix in code_table
+	if node.left == nil && node.right == nil {
+		code_table[node.char] = prefix
+	}
+
+	// left edge will keep adding 0 and vice versa
+	generateCodes(node.left, prefix+"0", code_table)
+	generateCodes(node.right, prefix+"1", code_table)
 }
