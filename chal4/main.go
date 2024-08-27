@@ -34,27 +34,27 @@ func main() {
 				os.Exit(1)
 			}
 
-			fmt.Print(strings.HasPrefix(snippets[1], "-f"), strings.HasSuffix(snippets[2], ".tsv"), strings.HasSuffix(snippets[2], ".csv"))
-			// check for -f
-			if len(snippets) < 3 || !strings.HasPrefix(snippets[1], "-f") || !strings.HasSuffix(snippets[2], ".tsv") || !strings.HasSuffix(snippets[2], ".csv") {
-				fmt.Print("\n Unknown command, use cut -f1 sample.tsv\n")
+			// Trim whitespace (including newlines) from the filename
+			filename := strings.TrimSpace(snippets[2])
+
+			// Check for -f and valid suffixes
+			if len(snippets) < 3 || !strings.HasPrefix(snippets[1], "-f") || !(strings.HasSuffix(filename, ".tsv") || strings.HasSuffix(filename, ".csv")) {
+				fmt.Println("\nUnknown command, use cut -f1 sample.tsv or cut -f1 sample.csv")
 				os.Exit(1)
 			}
 
 			field := snippets[1][2:]
-			fmt.Print("Field number:", field)
 
 			// convert string field to int
 			num_field, err := strconv.Atoi(field)
 			check(err)
-
-			filename := snippets[2]
 
 			res = extractFields(filename, num_field)
 		}
 
 	}
 
+	fmt.Println()
 	for _, line := range res {
 		fmt.Println(line)
 	}
@@ -94,12 +94,11 @@ func extractFields(filename string, field int) []string {
 	check(err)
 
 	for _, record := range records {
-		fmt.Println(record)
 		if len(record) < field {
 			fmt.Print("This field or column does not exist")
 			os.Exit(1)
 		}
-		res = append(res, record[field])
+		res = append(res, record[field-1])
 	}
 
 	return res
