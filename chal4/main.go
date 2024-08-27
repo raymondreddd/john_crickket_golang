@@ -24,6 +24,7 @@ func main() {
 	}
 
 	var res []string
+	line_limit := -1
 	for index, command := range commands {
 		snippets := strings.Split(command, " ")
 
@@ -50,13 +51,40 @@ func main() {
 			check(err)
 
 			res = extractFields(filename, num_field)
+		} else if index == 1 {
+			// example: head -n5
+
+			// we dont use [0] because it will contain ""
+			first_argument := strings.TrimSpace(snippets[1])
+
+			if first_argument != "head" || len(snippets) < 2 {
+				fmt.Println("2nd command should be like head")
+				os.Exit(1)
+			}
+
+			second_argument := strings.TrimSpace(snippets[2])
+			if !strings.HasPrefix(second_argument, "-n") {
+				fmt.Println("2nd argument should be like -n4")
+				os.Exit(1)
+			}
+
+			limit := second_argument[2:]
+			// convert string field to int
+			num_limit, err := strconv.Atoi(limit)
+			check(err)
+			line_limit = num_limit
 		}
 
 	}
 
+	// cut -f1 -d, fourchords.csv | head -n5
+	// cut -f1 four.csv | head -n5
 	fmt.Println()
-	for _, line := range res {
+	for line_count, line := range res {
 		fmt.Println(line)
+		if line_limit != -1 && line_count == line_limit-1 {
+			break
+		}
 	}
 
 }
