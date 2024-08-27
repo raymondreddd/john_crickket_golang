@@ -35,8 +35,22 @@ func main() {
 				os.Exit(1)
 			}
 
-			// Trim whitespace (including newlines) from the filename
-			filename := strings.TrimSpace(snippets[2])
+			third_argument := strings.TrimSpace(snippets[2]) // Trim whitespace (including newlines) from the 3rd argument
+			filename := ""
+			var delimiter string = "\t" // Default to tab delimiter
+
+			if strings.HasPrefix(third_argument, "-d") {
+				// validate that file name is present
+				if len(snippets) < 4 {
+					fmt.Println("\n Icomplete command, use cut -f1 -d, sample.tsv or cut -f1 -d, sample.csv")
+					os.Exit(1)
+				}
+
+				filename = strings.TrimSpace(snippets[3]) // file name is the 3rd arg
+				delimiter = third_argument[2:]            // extract only the dilimeter value
+			} else {
+				filename = strings.TrimSpace(snippets[2])
+			}
 
 			// Check for -f and valid suffixes
 			if len(snippets) < 3 || !strings.HasPrefix(snippets[1], "-f") || !(strings.HasSuffix(filename, ".tsv") || strings.HasSuffix(filename, ".csv")) {
@@ -50,7 +64,7 @@ func main() {
 			num_field, err := strconv.Atoi(field)
 			check(err)
 
-			res = extractFields(filename, num_field)
+			res = extractFields(filename, num_field, delimiter)
 		} else if index == 1 {
 			// example: head -n5
 
@@ -103,7 +117,7 @@ func check(err error) {
 	}
 }
 
-func extractFields(filename string, field int) []string {
+func extractFields(filename string, field int, delimiter string) []string {
 	var res []string
 
 	// Read csv file
@@ -113,19 +127,32 @@ func extractFields(filename string, field int) []string {
 	// Create a new CSV reader
 	reader := csv.NewReader(file)
 
-	// Check the file extension for tsv, if yes then set the delimiter to a tab for TSV files
-	if strings.HasSuffix(filename, ".tsv") {
-		reader.Comma = '\t'
+	// Set the delimiter based on the provided value
+	if delimiter == "" {
+		// Default to tab delimiter for TSV files
+		if strings.HasSuffix(filename, ".tsv") {
+			reader.Comma = '\t'
+		} else {
+			reader.Comma = ',' // Default to comma for CSV or other files
+		}
+	} else {
+		reader.Comma = rune(delimiter[0])
 	}
 
+	// Enable lazy quotes to handle improperly formatted quoted fields
+	reader.LazyQuotes = true
+
+	// Read all records
 	records, err := reader.ReadAll()
 	check(err)
 
+	// Extract the specified field from each record
 	for _, record := range records {
 		if len(record) < field {
 			fmt.Print("This field or column does not exist")
 			os.Exit(1)
 		}
+		// Append the field's value directly to the result
 		res = append(res, record[field-1])
 	}
 
