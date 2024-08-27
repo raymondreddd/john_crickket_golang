@@ -5,11 +5,11 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
 func main() {
-
 	// Taking user input
 	input_reader := bufio.NewReader(os.Stdin)
 
@@ -23,6 +23,7 @@ func main() {
 		return
 	}
 
+	var res []string
 	for index, command := range commands {
 		snippets := strings.Split(command, " ")
 
@@ -33,17 +34,29 @@ func main() {
 				os.Exit(1)
 			}
 
+			fmt.Print(strings.HasPrefix(snippets[1], "-f"), strings.HasSuffix(snippets[2], ".tsv"), strings.HasSuffix(snippets[2], ".csv"))
 			// check for -f
-			if len(snippets) < 3 || !strings.HasPrefix(snippets[1], "-f") {
-				fmt.Print("Unknown command, use cut -f1 sample.tsv")
+			if len(snippets) < 3 || !strings.HasPrefix(snippets[1], "-f") || !strings.HasSuffix(snippets[2], ".tsv") || !strings.HasSuffix(snippets[2], ".csv") {
+				fmt.Print("\n Unknown command, use cut -f1 sample.tsv\n")
 				os.Exit(1)
 			}
 
 			field := snippets[1][2:]
 			fmt.Print("Field number:", field)
 
+			// convert string field to int
+			num_field, err := strconv.Atoi(field)
+			check(err)
+
+			filename := snippets[2]
+
+			res = extractFields(filename, num_field)
 		}
 
+	}
+
+	for _, line := range res {
+		fmt.Println(line)
 	}
 
 }
@@ -82,6 +95,11 @@ func extractFields(filename string, field int) []string {
 
 	for _, record := range records {
 		fmt.Println(record)
+		if len(record) < field {
+			fmt.Print("This field or column does not exist")
+			os.Exit(1)
+		}
+		res = append(res, record[field])
 	}
 
 	return res
