@@ -66,6 +66,8 @@ func main() {
 
 	// Step 2 - huffman tree (or minimum priority queue based on freq) out of the map
 	tree := buildHuffmanTree(freq_map)
+	fmt.Print("Printing created huffman tree \n")
+
 	printTree(tree, 0)
 
 	// Step 3 -  Prefix code table for each rune the respective prefixed binary code
@@ -101,6 +103,7 @@ func main() {
 	if err := binary.Read(buf, binary.BigEndian, &tree_size); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("Tree size decoded: %d\n", tree_size)
 
 	// Extract the Huffman Tree data and decode it
 	tree_data := encoded_content[4 : 4+tree_size]
@@ -108,9 +111,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Print("Printing decoded tree \n")
+	printTree(decoded_tree, 0)
 
 	// Extract the encoded text
 	encoded_text = string(encoded_content[4+tree_size:])
+	fmt.Print("Encoded text:", encoded_text)
 	decoded_text := decodeText(encoded_text, decoded_tree)
 
 	writeTextToFile("decoded.txt", decoded_text)
@@ -270,6 +276,7 @@ func writeEncodedFile(filename string, tree *HuffmanNode, encoded_text string) e
 	encoded_tree := buf.Bytes()
 
 	tree_size := int32(len(encoded_tree))
+	fmt.Printf("Encoded Tree size: %d\n", tree_size)
 
 	// append bytes converted `encoded_text` (original text mapped to binary using prefix_code_table) to `encoded_tree` (or the huffman tree we created)
 	encoded_tree = append(encoded_tree, []byte(encoded_text)...)
@@ -331,5 +338,6 @@ func decodeText(encodedText string, tree *HuffmanNode) string {
 			node = tree
 		}
 	}
+	fmt.Print("\n decode text: ", decodedText)
 	return decodedText
 }
