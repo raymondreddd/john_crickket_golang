@@ -37,7 +37,7 @@ func main() {
 
 			third_argument := strings.TrimSpace(snippets[2]) // Trim whitespace (including newlines) from the 3rd argument
 			filename := ""
-			var delimiter string = "\t" // Default to tab delimiter
+			var delimiter string = "" // Default to empty
 
 			if strings.HasPrefix(third_argument, "-d") {
 				// validate that file name is present
@@ -146,12 +146,15 @@ func extractFields(filename string, field int, delimiter string) []string {
 	records, err := reader.ReadAll()
 	check(err)
 
+	fmt.Println("delimei:", delimiter)
 	// Extract the specified field from each record
 	for _, record := range records {
 		if len(record) < field {
 			fmt.Print("This field or column does not exist")
 			os.Exit(1)
 		}
+		// cut -f1 -d, four.csv | head -n5
+		// cut -f1 four.csv | head -n5
 		// Append the field's value directly to the result
 		res = append(res, record[field-1])
 	}
