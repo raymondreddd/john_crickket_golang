@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,27 +8,15 @@ import (
 	"net/url"
 )
 
-func handleRoute(path string) *bytes.Buffer {
-	buf := bytes.Buffer{}
+type server struct {
+	address string
+	active  bool
+}
 
-	switch path {
-	case "/health":
-		buf.Write([]byte("HTTP/1.1 204 No Content\r\n"))
-		buf.Write([]byte("Connection: close\r\n"))
-		buf.Write([]byte("\r\n"))
-	case "/":
-		buf.Write([]byte("HTTP/1.1 200 OK\r\n"))
-		buf.Write([]byte("Connection: close\r\n"))
-		buf.Write([]byte("Content-Length: 27\r\n"))
-		buf.Write([]byte("\r\n"))
-		buf.Write([]byte("Hello From Backend Server\r\n"))
-	default:
-		buf.Write([]byte("HTTP/1.1 404 Not Found\r\n"))
-		buf.Write([]byte("Connection: close\r\n"))
-		buf.Write([]byte("\r\n"))
-	}
-
-	return &buf
+var servers []*server = []*server{
+	{address: "127.0.0.1:8081", active: true},
+	{address: "127.0.0.1:8082", active: true},
+	{address: "127.0.0.1:8083", active: true},
 }
 
 func startBackendServer(w http.ResponseWriter, r *http.Request) {
