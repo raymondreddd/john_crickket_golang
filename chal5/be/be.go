@@ -2,26 +2,21 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 )
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Received request from", r.RemoteAddr)
+	fmt.Println(r.Method, r.URL, r.Proto)
+	fmt.Println("Host:", r.Host)
+	fmt.Println("User-Agent:", r.UserAgent())
+	fmt.Println("Accept:", r.Header.Get("Accept"))
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Hello From Backend Server")
+}
+
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Log the incoming request
-		log.Printf("Received request from %s\n", r.RemoteAddr)
-		log.Printf("%s %s %s\n", r.Method, r.URL.Path, r.Proto)
-
-		// Respond with a hello message
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, "Hello From Backend Server")
-		log.Println("Replied with a hello message")
-	})
-
-	// Start the backend server
-	port := ":8080" // Listen on port 8080
-	log.Printf("Starting backend server on port %s\n", port)
-	if err := http.ListenAndServe(port, nil); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
+	http.HandleFunc("/", handler)
+	fmt.Println("Starting backend server on port 8080")
+	http.ListenAndServe(":8080", nil)
 }

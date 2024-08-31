@@ -2,72 +2,61 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"io"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
+	"sync/atomic"
 )
 
-type server struct {
-	address string
-	active  bool
+var (
+	backendServers = []string{
+		"http://localhost:8080",
+		"http://localhost:8081",
+	}
+	currentServer uint32
+)
+
+func getNextServer() string {
+	index := atomic.AddUint32(&currentServer, 1)
+	return backendServers[(int(index)-1)%len(backendServers)]
 }
 
-var servers []*server = []*server{
-	{address: "127.0.0.1:8081", active: true},
-	{address: "127.0.0.1:8082", active: true},
-	{address: "127.0.0.1:8083", active: true},
-}
+func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Received request from", r.RemoteAddr)
+	fmt.Println(r.Method, r.URL, r.Proto)
+	fmt.Println("Host:", r.Host)
+	fmt.Println("User-Agent:", r.UserAgent())
+	fmt.Println("Accept:", r.Header.Get("Accept"))
 
-func startBackendServer(w http.ResponseWriter, r *http.Request) {
-	// Check if the current request URL path exactly matches "/". If it doesn't
-	// the http.NotFound() function to send a 404 response to the client.
-	// Importantly, we then return from the handler. If we don't return the hand
-	// would keep executing and also write the "Hello from SnippetBox" message.
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-	if r.Method != "GET" {
-		// Use the Header().Set() method to add an 'Allow: POST' header to the response header map
-		w.Header().Set("Allow", "GET")
-		// w.WriteHeader(405)
-		// w.Write([]byte("Method Not Allowed"))
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed) // same as above 2 comments
-		return
-	}
-	w.Write([]byte("Hello from Snippetbox"))
+	backendServer := getNextServer()
 
-	backendURL, err := url.Parse("http://localhost:8080")
+	proxyReq, err := http.NewRequest(r.Method, backendServer+r.URL.String(), r.Body)
 	if err != nil {
-		log.Fatalf("Failed to parse backend URL: %v", err)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
 	}
 
-	// Create a reverse proxy to forward requests to the backend server
-	proxy := httputil.NewSingleHostReverseProxy(backendURL)
+	proxyReq.Header = r.Header
 
-	log.Printf("Received request from %s\n", r.RemoteAddr)
-	log.Printf("%s %s %s\n", r.Method, r.URL.Path, r.Proto)
+	client := &http.Client{}
+	resp, err := client.Do(proxyReq)
+	if err != nil {
+		http.Error(w, "Bad Gateway", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
 
-	// Forward the request to the backend server
-	proxy.ServeHTTP(w, r)
+	for key, values := range resp.Header {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
 }
 
 func main() {
-	// Use the http.NewServeMux() function to initialize a new servemux, then
-	// register the home function as the handler for the "/" URL pattern.
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", startBackendServer)
-	// Use the http.ListenAndServe() function to start a new web server. We pas
-	// two parameters: the TCP network address to listen on (in this case ":4000
-	// and the servemux we just created. If http.ListenAndServe() returns an er
-	// we use the log.Fatal() function to log the error message and exit.
-	port := ":80" // Listen on port 80
-	log.Printf("Starting load balancer on port %s\n", port)
-	if err := http.ListenAndServe(port, mux); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
-
-	// IP from request, host, user-agent, accept
-	fmt.Print("Recieved request from")
+	http.HandleFunc("/", handler)
+	fmt.Println("Starting load balancer on port 8000")
+	http.ListenAndServe(":8000", nil)
 }
