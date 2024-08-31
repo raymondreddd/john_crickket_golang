@@ -8,8 +8,17 @@ import (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	response := fmt.Sprintf("Requested path: %s", r.URL.Path)
+	method := r.Method
+	path := r.URL.Path
+	proto := r.Proto
 
+	// for server log
+	log.Printf("Received request: Method = %s, Path = %s, HTTP Version = %s", method, path, proto)
+
+	// client res log
+	response := fmt.Sprintf("HTTP/1.1 200 OK\r\n\r\nRequested path: %s\r\n", path)
+
+	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintln(w, response)
 }
 
