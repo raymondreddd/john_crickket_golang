@@ -11,7 +11,8 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", home)
 
-	addr := flag.String("addr", ":4000", "HTTP network address")
+	addr := flag.String("addr", ":8000", "HTTP network address")
+	flag.Parse()
 
 	log.Printf("Server is listening on %s", *addr)
 
