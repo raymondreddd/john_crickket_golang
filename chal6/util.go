@@ -27,20 +27,35 @@ func runPipe(input *bytes.Buffer) *bytes.Buffer {
 	return output
 }
 
+func isTextFile(input string) bool {
+	return strings.HasSuffix(input, ".txt")
+}
+
 func handleOtherCommand(cmd string, input *bytes.Buffer) {
+	// for example `head -n 5` to []string{"head", "-n", "5"}
 	args := strings.Fields(cmd)
 	name := args[0]
 	cmdArgs := args[1:]
 
 	command := exec.Command(name, cmdArgs...)
+
+	// redirect the input for command to come from `input` buffer or the sorted worsd
+	// which contains the output of the above command
 	command.Stdin = input
+
+	// to store the output
 	var out bytes.Buffer
+
+	// redirect the command output to out buffer
 	command.Stdout = &out
 
 	err := command.Run()
 	check(err)
 
-	// Copy output to the main buffer
+	// Clears the original input buffer.
 	input.Reset()
+
+	// this is chaining, output of (out) into `input` buffer
+	// e.g. next input can be uniq, so it will place only uniq words,etc.
 	input.Write(out.Bytes())
 }
