@@ -21,6 +21,23 @@ func check(err error) {
 	}
 }
 
+// dont pass pointer
+func SelectionSort(arr []string) {
+	n := len(arr)
+	for i := 0; i < n-1; i++ {
+		min_index := i
+		// unsorted part of the array
+		for j := i + 1; j < n; j++ {
+			// update min_index
+			if arr[j] < arr[min_index] {
+				min_index = j
+			}
+		}
+		// Swap the minimum element with the curr elemnt
+		arr[i], arr[min_index] = arr[min_index], arr[i]
+	}
+}
+
 func unqiueWords(words []string) []string {
 	if len(words) == 0 {
 		return words

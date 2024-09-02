@@ -40,26 +40,27 @@ func main() {
 }
 
 func handleSort(cmd string, output *bytes.Buffer) {
+	fmt.Println("Handle sort called")
 	args := strings.Fields(cmd)
 	var words []string
 	uniq_command := false
 	// meaning no -u command (Step 2)
-	if len(args) < 2 {
-		if args[0] != "-u" {
-			fmt.Print("Command should only -u argument")
+	if len(args) > 2 {
+		if args[1] != "-u" {
+			fmt.Println("Command should only -u argument, current used:", args[1])
 			os.Exit(1)
 		}
-		is_text_file := isTextFile(args[1])
+		is_text_file := isTextFile(args[2])
 		if !is_text_file {
-			fmt.Print("COmmand should include text file name")
+			fmt.Println("COmmand should include text file name 2 args, filename:", args[2])
 			os.Exit(1)
 		}
 		uniq_command = true
 	} else {
-		filename := args[0]
+		filename := args[1]
 		is_text_file := isTextFile(filename)
 		if !is_text_file {
-			fmt.Print("COmmand should include text file name")
+			fmt.Println("COmmand should include text file name 1 args, filename:", filename)
 			os.Exit(1)
 		}
 		file := readFile(filename)
@@ -75,12 +76,15 @@ func handleSort(cmd string, output *bytes.Buffer) {
 		slices.Sort(words)
 
 		if uniq_command {
-			words = unqiueWords(words)
+			SelectionSort(words)
 		}
 
 		for _, word := range words {
 			fmt.Fprintln(output, word)
 		}
 	}
+	fmt.Println("Handle sort done")
+	err := os.WriteFile("output.txt", output.Bytes(), 0644)
+	check(err)
 
 }
