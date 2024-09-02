@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -40,7 +41,8 @@ func main() {
 
 func handleSort(cmd string, output *bytes.Buffer) {
 	args := strings.Fields(cmd)
-
+	var words []string
+	uniq_command := false
 	// meaning no -u command (Step 2)
 	if len(args) < 2 {
 		if args[0] != "-u" {
@@ -52,6 +54,7 @@ func handleSort(cmd string, output *bytes.Buffer) {
 			fmt.Print("COmmand should include text file name")
 			os.Exit(1)
 		}
+		uniq_command = true
 	} else {
 		filename := args[0]
 		is_text_file := isTextFile(filename)
@@ -62,11 +65,22 @@ func handleSort(cmd string, output *bytes.Buffer) {
 		file := readFile(filename)
 
 		// new scanner because we need to read lines
-		file_content := bufio.NewScanner(file)
-		fmt.Print(file_content)
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			word := strings.TrimSpace(scanner.Text())
+			words = append(words, word)
+		}
 
+		// using sort utility
+		slices.Sort(words)
+
+		if uniq_command {
+			words = unqiueWords(words)
+		}
+
+		for _, word := range words {
+			fmt.Fprintln(output, word)
+		}
 	}
-	// Here you implement the sort logic
-	// For simplicity, we can assume it reads from stdin and writes to the output buffer
-	fmt.Fprintln(output, "Sorted data would go here.")
+
 }

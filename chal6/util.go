@@ -21,6 +21,20 @@ func check(err error) {
 	}
 }
 
+func unqiueWords(words []string) []string {
+	if len(words) == 0 {
+		return words
+	}
+
+	uniqueWords := []string{words[0]}
+	for i := 1; i < len(words); i++ {
+		if words[i] != words[i-1] {
+			uniqueWords = append(uniqueWords, words[i])
+		}
+	}
+	return uniqueWords
+}
+
 func runPipe(input *bytes.Buffer) *bytes.Buffer {
 	output := new(bytes.Buffer)
 	output.Write(input.Bytes())
