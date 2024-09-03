@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -33,6 +34,16 @@ func main() {
 			fmt.Println("Error reading from server:", err)
 			break
 		}
-		fmt.Print(message)
+		message = strings.TrimSpace(message)
+		fmt.Println(message)
+
+		// Respond to PING messages
+		if strings.HasPrefix(message, "PING") {
+			// only replace the 1st occurence of PING with PONG
+			response := strings.Replace(message, "PING", "PONG", 1)
+
+			// write the formatted message to specified writer - conn
+			fmt.Fprintf(conn, "%s\r\n", response)
+		}
 	}
 }
