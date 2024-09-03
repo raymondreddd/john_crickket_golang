@@ -52,6 +52,50 @@ func unqiueWords(words []string) []string {
 	return uniqueWords
 }
 
+func MergeSort(arr []string) []string {
+	if len(arr) <= 1 {
+		// base case
+		return arr
+	}
+
+	// D&C
+	mid := len(arr) / 2
+	left := MergeSort(arr[:mid])
+	right := MergeSort(arr[mid:])
+
+	return merge(left, right)
+}
+
+func merge(left, right []string) []string {
+	result := []string{}
+	i, j := 0, 0
+
+	// 2 pointer approach
+	for i < len(left) && j < len(right) {
+		if left[i] <= right[j] {
+			result = append(result, left[i])
+			i++
+		} else {
+			result = append(result, right[j])
+			j++
+		}
+	}
+
+	// remaining elemnts from left
+	for i < len(left) {
+		result = append(result, left[i])
+		i++
+	}
+
+	// remaining elements from right
+	for j < len(right) {
+		result = append(result, right[j])
+		j++
+	}
+
+	return result
+}
+
 func runPipe(input *bytes.Buffer) *bytes.Buffer {
 	output := new(bytes.Buffer)
 	output.Write(input.Bytes())

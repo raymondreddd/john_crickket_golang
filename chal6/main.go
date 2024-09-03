@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"slices"
 	"strings"
 )
 
@@ -73,10 +72,10 @@ func handleSort(cmd string, output *bytes.Buffer) {
 		}
 
 		// using sort utility
-		slices.Sort(words)
+		SelectionSort(words)
 
 		if uniq_command {
-			SelectionSort(words)
+			unqiueWords(words)
 		}
 
 		for _, word := range words {
