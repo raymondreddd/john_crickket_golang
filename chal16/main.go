@@ -26,24 +26,67 @@ func main() {
 	fmt.Fprintf(conn, "NICK %s\r\n", nick)
 	fmt.Fprintf(conn, "USER %s\r\n", user)
 
-	// Read and print server responses
-	reader := bufio.NewReader(conn)
-	for {
-		message, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println("Error reading from server:", err)
-			break
+	// Create a channel to handle user input and server responses concurrently
+	inputChan := make(chan string)
+
+	// Goroutine to handle server messages
+	go func() {
+		reader := bufio.NewReader(conn)
+		for {
+			message, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Error reading from server:", err)
+				break
+			}
+			message = strings.TrimSpace(message)
+			fmt.Println("Server:", message)
+
+			// Respond to PING messages
+			if strings.HasPrefix(message, "PING") {
+				response := strings.Replace(message, "PING", "PONG", 1)
+				fmt.Fprintf(conn, "%s\r\n", response)
+			}
+
+			// Handle JOIN and PART responses (just logging for now)
+			if strings.Contains(message, "JOIN") {
+				fmt.Println("Joined channel:", extractChannel(message))
+			} else if strings.Contains(message, "PART") {
+				fmt.Println("Left channel:", extractChannel(message))
+			}
 		}
-		message = strings.TrimSpace(message)
-		fmt.Println(message)
+	}()
 
-		// Respond to PING messages
-		if strings.HasPrefix(message, "PING") {
-			// only replace the 1st occurence of PING with PONG
-			response := strings.Replace(message, "PING", "PONG", 1)
+	// Goroutine to handle user input
+	go func() {
+		userReader := bufio.NewReader(os.Stdin)
+		for {
+			fmt.Print("> ")
+			text, _ := userReader.ReadString('\n')
+			text = strings.TrimSpace(text)
+			inputChan <- text
+		}
+	}()
 
-			// write the formatted message to specified writer - conn
-			fmt.Fprintf(conn, "%s\r\n", response)
+	// Use a for-range loop to process user input
+	for userInput := range inputChan {
+		if strings.HasPrefix(userInput, "/join ") {
+			channel := strings.TrimSpace(strings.Split(userInput, " ")[1])
+			fmt.Fprintf(conn, "JOIN %s\r\n", channel)
+		} else if strings.HasPrefix(userInput, "/part ") {
+			channel := strings.TrimSpace(strings.Split(userInput, " ")[1])
+			fmt.Fprintf(conn, "PART %s\r\n", channel)
+		} else {
+			// Other commands can be handled here
+			fmt.Fprintf(conn, "%s\r\n", userInput)
 		}
 	}
+}
+
+// extractChannel extracts the channel name from a JOIN or PART message
+func extractChannel(message string) string {
+	parts := strings.Split(message, " ")
+	if len(parts) > 2 {
+		return parts[len(parts)-1] // The channel is typically the last part of the message
+	}
+	return ""
 }
