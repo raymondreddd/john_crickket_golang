@@ -8,12 +8,12 @@ import (
 	"net/http/httputil"
 )
 
-var bannedHosts map[string]struct{}
+var BannedHosts map[string]struct{}
 
 // Handle each request, checking if the host is banned
 func handleRequestAndRedirect(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
-	if _, banned := bannedHosts[host]; banned {
+	if _, banned := BannedHosts[host]; banned {
 		w.WriteHeader(http.StatusForbidden)
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Header().Set("X-Content-Type-Options", "nosniff")

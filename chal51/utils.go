@@ -8,7 +8,7 @@ import (
 
 // Load forbidden hosts from file into a set (map with empty struct values)
 func loadBannedHosts(filePath string) error {
-	bannedHosts := make(map[string]struct{})
+	BannedHosts = make(map[string]struct{})
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -20,7 +20,7 @@ func loadBannedHosts(filePath string) error {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line != "" {
-			bannedHosts[line] = struct{}{}
+			BannedHosts[line] = struct{}{}
 		}
 	}
 	return scanner.Err()
