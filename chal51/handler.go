@@ -1,12 +1,33 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 )
 
-func handle(w http.ResponseWriter, r *http.Request) {
+var bannedHosts map[string]struct{}
+
+// Handle each request, checking if the host is banned
+func handleRequestAndRedirect(w http.ResponseWriter, r *http.Request) {
+	host := r.Host
+	if _, banned := bannedHosts[host]; banned {
+		w.WriteHeader(http.StatusForbidden)
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		msg := fmt.Sprintf("Website not allowed: %s\n", host)
+		w.Write([]byte(msg))
+		log.Printf("Blocked request to banned host: %s", host)
+		return
+	}
+
+	// Forward request to the target if not banned
+	proxyHanlder(w, r)
+}
+
+func proxyHanlder(w http.ResponseWriter, r *http.Request) {
 	// Extract client IP for X-Forwarded-For header
 	clientIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -15,7 +36,21 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove hop-by-hop headers (which apply to a single connection)
-	hopByHopHeaders := []string{"Proxy-Connection", "Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization", "TE", "Trailers", "Transfer-Encoding", "Upgrade"}
+	hopByHopHeaders := []string{
+		"Proxy-Connection",
+		"Connection",
+		"Keep-Alive",
+		"Proxy-Authenticate",
+		"Proxy-Authorization",
+		"TE",
+		"Trailers",
+		"Transfer-Encoding",
+		"Upgrade"}
+	// hopByHopHeaders := []string{
+	//     "Proxy-Connection", "Connection", "Keep-Alive", "Proxy-Authenticate",
+	//     "Proxy-Authorization", "TE", "Trailers", "Transfer-Encoding", "Upgrade",
+	//     "X-Forwarded-For", "X-Forwarded-Host", "X-Forwarded-Proto", "Forwarded", "Via",
+	// }
 	for _, h := range hopByHopHeaders {
 		r.Header.Del(h)
 	}

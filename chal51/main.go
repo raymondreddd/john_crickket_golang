@@ -11,7 +11,12 @@ func main() {
 	addr := flag.String("addr", ":8989", "HTTP network address")
 	flag.Parse()
 
-	mux.HandleFunc("/", handle)
+	err := loadBannedHosts("forbidden-hosts.txt")
+	if err != nil {
+		log.Fatalf("Error loading banned hosts: %v", err)
+	}
+
+	mux.HandleFunc("/", handleRequestAndRedirect)
 
 	log.Printf("Server is listening on %s", *addr)
 
