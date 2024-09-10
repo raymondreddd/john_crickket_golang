@@ -8,8 +8,6 @@ import (
 	"net/http/httputil"
 )
 
-var BannedHosts map[string]struct{}
-
 // Handle each request, checking if the host is banned
 func handleRequestAndRedirect(w http.ResponseWriter, r *http.Request) {
 	host := r.Host

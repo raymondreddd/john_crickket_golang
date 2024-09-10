@@ -6,6 +6,9 @@ import (
 	"net/http"
 )
 
+// essentially a set
+var BannedHosts map[string]struct{}
+
 func main() {
 	mux := http.NewServeMux()
 	addr := flag.String("addr", ":8989", "HTTP network address")
