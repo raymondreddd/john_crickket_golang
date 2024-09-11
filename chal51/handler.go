@@ -33,6 +33,19 @@ func proxyHanlder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/*
+		If we don't use the httputil.ReverseProxy then we can use below
+
+		Parse the incoming request.
+		Recreate the request for the target server, ensuring headers are copied and adjusted.
+		Forward the request to the target server using http.Client.
+		Read the server’s response, and copy the response back to the client, adjusting headers as needed.
+		targetURL := fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)
+
+		client := &http.Client{}
+		req, err := http.NewRequest(r.Method, targetURL, r.Body)
+	*/
+
 	// Remove hop-by-hop headers (which apply to a single connection)
 	hopByHopHeaders := []string{
 		"Proxy-Connection",

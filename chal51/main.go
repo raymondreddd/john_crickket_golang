@@ -8,6 +8,7 @@ import (
 
 // essentially a set
 var BannedHosts map[string]struct{}
+var BannedWords = map[string]struct{}{}
 
 func main() {
 	mux := http.NewServeMux()
